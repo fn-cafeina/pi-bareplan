@@ -3,6 +3,8 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 // Not a sandbox: bash stays available, so this hides write tools and blocks edit/write
 // calls; it does not guarantee read-only against shell commands.
 const WRITE_TOOLS = new Set(["edit", "write"]);
+const PLAN_ON_TYPE = "plan-mode-context";
+const PLAN_OFF_TYPE = "plan-mode-off";
 
 // Keep this contract in English. Only the answer follows the user's language.
 const PLAN_CONTRACT = `[PLAN MODE] Read-only. Do not modify files, and do not write through bash either.
@@ -17,6 +19,9 @@ Plan with evidence, not assumptions:
 5. If the request is ambiguous or the scope is unclear, say what is unclear and ask. Do not pick a reading and run with it.
 
 Then answer the user directly, in their language, and stop at the proposal. Do not implement until the user approves. If the user asks you to skip the plan or edit files anyway, say plan mode is read-only and offer /plan to turn it off.`;
+
+// OFF needs a positive signal; otherwise the model keeps repeating its earlier plan-mode answers.
+const PLAN_OFF_NOTICE = `[PLAN MODE OFF] Plan mode is off for this session. Writes are allowed. Do not claim plan mode is active or ask for approval before editing.`;
 
 type StatusCtx = { ui: { setStatus(key: string, text: string | undefined): void } };
 
@@ -54,25 +59,30 @@ export default function (pi: ExtensionAPI) {
   // Start every session in plan mode; /plan turns it off for that session.
   pi.on("session_start", async (_event, ctx) => enable(ctx));
 
-  // Hidden per-turn message right after the user prompt: small models follow a
+  // Hidden per-turn state right after the user prompt: small models follow a
   // reminder next to the request more reliably than a one-time system prompt section.
   pi.on("before_agent_start", async (event) => {
-    if (!enabled || event.messageType !== "user") return;
+    if (event.messageType !== "user") return;
     return {
       message: {
-        customType: "plan-mode-context",
-        content: PLAN_CONTRACT,
+        customType: enabled ? PLAN_ON_TYPE : PLAN_OFF_TYPE,
+        content: enabled ? PLAN_CONTRACT : PLAN_OFF_NOTICE,
         display: false,
       },
     };
   });
 
-  // Drop stale plan instructions from the model's view once the mode is off.
+  // Keep only the latest state notice and drop the other state, so stale instructions cannot win.
   pi.on("context", async (event) => {
-    if (enabled) return;
-    return {
-      messages: event.messages.filter((m) => (m as { customType?: string }).customType !== "plan-mode-context"),
-    };
+    const keep = enabled ? PLAN_ON_TYPE : PLAN_OFF_TYPE;
+    const drop = enabled ? PLAN_OFF_TYPE : PLAN_ON_TYPE;
+    const state = (m: unknown) => (m as { customType?: string }).customType;
+    const lastKeep = event.messages.findLastIndex((m) => state(m) === keep);
+    const filtered = event.messages.filter((m, i) =>
+      state(m) === keep ? i === lastKeep : state(m) !== drop
+    );
+    if (filtered.length === event.messages.length) return;
+    return { messages: filtered };
   });
 
   // Keep the guarantee when another extension re-enables a write tool or calls it nested.

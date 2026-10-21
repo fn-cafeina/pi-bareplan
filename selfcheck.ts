@@ -42,17 +42,47 @@ assert.match(blocked.reason, /read-only/);
 assert.equal((await handlers.tool_call({ toolName: "edit" })).block, true, "ON: edit blocked");
 assert.equal(await handlers.tool_call({ toolName: "bash" }), undefined, "ON: bash allowed");
 assert.equal(await handlers.tool_call({ toolName: "read" }), undefined, "ON: read allowed");
-assert.equal(await handlers.context({ messages: [] }), undefined, "ON: context untouched");
+assert.equal(await handlers.context({ messages: [{ role: "user" }] }), undefined, "ON: unrelated context untouched");
+const onPruned = await handlers.context({
+  messages: [
+    { customType: "plan-mode-off", content: "old off" },
+    { customType: "plan-mode-context", content: "old on" },
+    { role: "user" },
+    { customType: "plan-mode-context", content: "new on" },
+  ],
+});
+assert.deepStrictEqual(
+  onPruned.messages,
+  [{ role: "user" }, { customType: "plan-mode-context", content: "new on" }],
+  "ON: stale OFF and ON notices pruned"
+);
 
 // toggle OFF: tools restored, status shows OFF
 await handlers.command.handler([], ctx);
 assert.deepStrictEqual(calls[1].tools, ["read", "bash", "edit", "write", "search"], "OFF: restored");
 assert.equal(status, "plan: OFF");
 
-// OFF: no reminder, stale plan messages filtered, writes allowed again
-assert.equal(await handlers.before_agent_start({ messageType: "user" }), undefined, "OFF: no reminder");
-const filtered = await handlers.context({ messages: [{ customType: "plan-mode-context" }, { role: "user" }] });
-assert.deepStrictEqual(filtered.messages, [{ role: "user" }], "OFF: stale plan message dropped");
+// OFF: explicit notice, stale state pruned, writes allowed again
+const offReminder = await handlers.before_agent_start({ messageType: "user" });
+assert.equal(offReminder.message.customType, "plan-mode-off", "OFF: explicit notice customType");
+assert.equal(offReminder.message.display, false, "OFF: notice hidden");
+assert.match(offReminder.message.content, /PLAN MODE OFF/);
+assert.match(offReminder.message.content, /writes are allowed/i, "OFF: state writes are allowed");
+assert.match(offReminder.message.content, /Do not claim plan mode is active/i, "OFF: counter stale claims");
+assert.equal(await handlers.before_agent_start({ messageType: "custom" }), undefined, "OFF: custom run no notice");
+const filtered = await handlers.context({
+  messages: [
+    { customType: "plan-mode-context", content: "old on" },
+    { customType: "plan-mode-off", content: "old off" },
+    { role: "user" },
+    { customType: "plan-mode-off", content: "new off" },
+  ],
+});
+assert.deepStrictEqual(
+  filtered.messages,
+  [{ role: "user" }, { customType: "plan-mode-off", content: "new off" }],
+  "OFF: stale ON/OFF notices pruned, latest OFF kept"
+);
 assert.equal(await handlers.tool_call({ toolName: "edit" }), undefined, "OFF: writes allowed");
 
 // second ON re-snapshots current tools (savedTools cleared on OFF)
@@ -60,6 +90,18 @@ await handlers.command.handler([], ctx);
 assert.deepStrictEqual(calls[2].tools, ["read", "bash", "search"], "second ON: filters again");
 const again = await handlers.before_agent_start({ messageType: "user" });
 assert.equal(again.message.customType, "plan-mode-context", "second ON: reminder again");
+const onAgain = await handlers.context({
+  messages: [
+    { customType: "plan-mode-off", content: "stale off" },
+    { role: "user" },
+    { customType: "plan-mode-context", content: "new on" },
+  ],
+});
+assert.deepStrictEqual(
+  onAgain.messages,
+  [{ role: "user" }, { customType: "plan-mode-context", content: "new on" }],
+  "second ON: stale OFF notice dropped"
+);
 
 // a new session turns plan mode back on after an OFF
 await handlers.command.handler([], ctx);

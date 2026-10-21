@@ -13,9 +13,11 @@ Plan mode is on when a session starts, and the status bar shows `plan: ON`. Whil
 - It closes the usual escape routes: ambiguous scope gets a question instead of a guess, nothing is implemented before you approve, and a request to edit anyway gets a pointer to `/plan` instead of a silent exception.
 - The reminder does not dictate reply shape, language or sections. Formatting stays with the harness and your own instructions.
 
+When the mode is off, a hidden `[PLAN MODE OFF]` notice is attached to every user turn. It states that writes are allowed and tells the model not to keep claiming plan mode is active.
+
 The reminder repeats on every turn on purpose. A single system prompt section is easy for small models to drop, especially next to a direct request to implement.
 
-`/plan` turns the mode off for the current session. The saved tools come back, the status bar shows `plan: OFF`, and the plan messages are filtered out of the model's context. The next session starts in plan mode again.
+`/plan` turns the mode off for the current session. The saved tools come back, the status bar shows `plan: OFF`, and the OFF notice replaces the plan contract in the model's context. Stale ON/OFF notices are pruned so only the latest state survives. The next session starts in plan mode again.
 
 ## Not a sandbox
 
@@ -39,7 +41,7 @@ Plan mode is active from the first turn. Type `/plan` to switch it off, and agai
 
 ## Development
 
-The self check loads the extension with a mock `ExtensionAPI` and asserts the mode behavior: default state, toggle, contract and write blocking.
+The self check loads the extension with a mock `ExtensionAPI` and asserts the mode behavior: default state, toggle, contract, OFF notice, notice pruning and write blocking.
 
 ```bash
 node selfcheck.ts
