@@ -17,11 +17,11 @@ const ctx = { ui: { notify: (m: string) => notifications.push(m), setStatus: (_k
 
 ext(pi as any);
 
-// toggle ON: write tools gone, status set
-await handlers.command.handler([], ctx);
-assert.deepStrictEqual(calls[0].tools, ["read", "bash", "search"], "ON: edit/write filtered");
+// session_start: plan mode is ON by default, without a notification
+await handlers.session_start({ reason: "startup" }, ctx);
+assert.deepStrictEqual(calls[0].tools, ["read", "bash", "search"], "default ON: edit/write filtered");
 assert.equal(status, "plan");
-assert.deepStrictEqual(notifications, ["Plan mode ON"]);
+assert.deepStrictEqual(notifications, []);
 
 // ON: contract attached as a hidden message on every user turn, not a system section
 const onPrompt = { messageType: "user", systemPromptOptions: { sections: {} as Record<string, string> } };
@@ -46,7 +46,7 @@ assert.equal(await handlers.context({ messages: [] }), undefined, "ON: context u
 await handlers.command.handler([], ctx);
 assert.deepStrictEqual(calls[1].tools, ["read", "bash", "edit", "write", "search"], "OFF: restored");
 assert.equal(status, undefined);
-assert.equal(notifications[1], "Plan mode OFF");
+assert.equal(notifications[0], "Plan mode OFF");
 
 // OFF: no reminder, stale plan messages filtered, writes allowed again
 assert.equal(await handlers.before_agent_start({ messageType: "user" }), undefined, "OFF: no reminder");
@@ -57,7 +57,15 @@ assert.equal(await handlers.tool_call({ toolName: "edit" }), undefined, "OFF: wr
 // second ON re-snapshots current tools (savedTools cleared on OFF)
 await handlers.command.handler([], ctx);
 assert.deepStrictEqual(calls[2].tools, ["read", "bash", "search"], "second ON: filters again");
+assert.equal(notifications[1], "Plan mode ON");
 const again = await handlers.before_agent_start({ messageType: "user" });
 assert.equal(again.message.customType, "plan-mode-context", "second ON: reminder again");
+
+// a new session turns plan mode back on after an OFF
+await handlers.command.handler([], ctx);
+assert.deepStrictEqual(calls[3].tools, ["read", "bash", "edit", "write", "search"], "OFF again: restored");
+await handlers.session_start({ reason: "new" }, ctx);
+assert.deepStrictEqual(calls[4].tools, ["read", "bash", "search"], "new session: plan ON again");
+assert.equal(status, "plan");
 
 console.log("ok — all assertions passed");

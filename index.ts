@@ -22,29 +22,43 @@ Answer with, under "Plan:":
 
 Rules: no code until approved; no scope beyond the request; deletion beats addition; name in one line any extra feature you skip. Write in the user's language.`;
 
+type StatusCtx = { ui: { setStatus(key: string, text: string | undefined): void } };
+
 export default function (pi: ExtensionAPI) {
   let enabled = false;
   let savedTools: string[] | undefined;
 
-  const setStatus = (ctx: { ui: { setStatus(key: string, text: string | undefined): void } }) =>
-    ctx.ui.setStatus("bareplan", enabled ? "plan" : undefined);
+  const setStatus = (ctx: StatusCtx) => ctx.ui.setStatus("bareplan", enabled ? "plan" : undefined);
+
+  const enable = (ctx: StatusCtx) => {
+    enabled = true;
+    savedTools ??= pi.getActiveTools();
+    pi.setActiveTools(savedTools.filter((t) => !WRITE_TOOLS.has(t)));
+    setStatus(ctx);
+  };
+
+  const disable = (ctx: StatusCtx) => {
+    enabled = false;
+    pi.setActiveTools(savedTools ?? pi.getActiveTools());
+    savedTools = undefined;
+    setStatus(ctx);
+  };
 
   pi.registerCommand("plan", {
     description: "Toggle plan mode (read-only)",
     handler: (_args, ctx) => {
-      enabled = !enabled;
       if (enabled) {
-        savedTools ??= pi.getActiveTools();
-        pi.setActiveTools(savedTools.filter((t) => !WRITE_TOOLS.has(t)));
-        ctx.ui.notify("Plan mode ON", "info");
-      } else {
-        pi.setActiveTools(savedTools ?? pi.getActiveTools());
-        savedTools = undefined;
+        disable(ctx);
         ctx.ui.notify("Plan mode OFF", "info");
+      } else {
+        enable(ctx);
+        ctx.ui.notify("Plan mode ON", "info");
       }
-      setStatus(ctx);
     },
   });
+
+  // Start every session in plan mode; /plan turns it off for that session.
+  pi.on("session_start", async (_event, ctx) => enable(ctx));
 
   // Hidden per-turn message right after the user prompt: small models follow a
   // reminder next to the request more reliably than a one-time system prompt section.
