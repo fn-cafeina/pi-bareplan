@@ -16,6 +16,7 @@ Pi extension that toggles plan mode: read-only investigation, then a numbered pl
 ## Install
 
 ```bash
+pi install npm:pi-bareplan                          # from npm (recommended)
 pi install git:github.com/fn-cafeina/pi-bareplan    # from git
 pi install ./pi-bareplan                            # local path
 ```
