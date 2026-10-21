@@ -4,6 +4,7 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 // calls; it does not guarantee read-only against shell commands.
 const WRITE_TOOLS = new Set(["edit", "write"]);
 
+// Keep this contract in English. Only the answer follows the user's language.
 const PLAN_CONTRACT = `[PLAN MODE] Read-only. Do not modify files, and do not write through bash either.
 
 Before you write the plan:
