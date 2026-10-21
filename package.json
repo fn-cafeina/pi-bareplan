@@ -3,6 +3,15 @@
   "version": "0.1.5",
   "type": "module",
   "license": "Apache-2.0",
+  "description": "Pi extension that starts every session in plan mode: read-only investigation, then a numbered plan before any file changes.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fn-cafeina/pi-bareplan.git"
+  },
+  "homepage": "https://github.com/fn-cafeina/pi-bareplan#readme",
+  "bugs": {
+    "url": "https://github.com/fn-cafeina/pi-bareplan/issues"
+  },
   "keywords": ["pi-package"],
   "pi": {
     "extensions": ["./index.ts"]
