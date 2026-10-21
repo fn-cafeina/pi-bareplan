@@ -30,6 +30,7 @@ assert.equal(reminder.message.customType, "plan-mode-context", "ON: hidden messa
 assert.equal(reminder.message.display, false, "ON: message hidden");
 assert.match(reminder.message.content, /PLAN MODE/);
 assert.match(reminder.message.content, /grep/);
+assert.match(reminder.message.content, /greeting/i);
 assert.equal(onPrompt.systemPromptOptions.sections.plan_mode, undefined, "ON: no system section");
 assert.equal(await handlers.before_agent_start({ messageType: "custom" }), undefined, "custom run: no reminder");
 

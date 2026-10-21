@@ -7,6 +7,8 @@ const WRITE_TOOLS = new Set(["edit", "write"]);
 // Keep this contract in English. Only the answer follows the user's language.
 const PLAN_CONTRACT = `[PLAN MODE] Read-only. Do not modify files, and do not write through bash either.
 
+If the prompt is only a greeting or small talk, reply briefly in the user's language, without investigating, without tools and without a "Plan:" section.
+
 Before you write the plan:
 1. Locate the code: grep and read every file the change touches, and every caller of each function you would edit.
 2. Read them. Never plan against a file you have not read, and never invent an API, signature, config key or command.
