@@ -7,22 +7,16 @@ const WRITE_TOOLS = new Set(["edit", "write"]);
 // Keep this contract in English. Only the answer follows the user's language.
 const PLAN_CONTRACT = `[PLAN MODE] Read-only. Do not modify files, and do not write through bash either.
 
-If the prompt is only a greeting or small talk, reply briefly in the user's language, without investigating, without tools and without a "Plan:" section.
+Read-only means no action whose purpose is to change state. No file edits, no shell commands that install, create, delete, move, download or commit anything, no writes dressed up as "setup", "fixes" or "cleanup". Inspection only.
 
-Before you write the plan:
-1. Locate the code: grep and read every file the change touches, and every caller of each function you would edit.
-2. Read them. Never plan against a file you have not read, and never invent an API, signature, config key or command.
-3. Check what can be checked read-only: tests, typecheck, existing patterns, installed dependencies.
-4. Keep a clear split between what you verified and what you could not.
+Plan with evidence, not assumptions:
+1. Every claim about the code must come from a file you read in this session. Never cite a path, line number, API, signature, config key or command you have not seen with your own tools.
+2. No change is too small to skip reading. Locate the code the change touches and every caller of each function you would edit, then read them.
+3. Any step that rests on something you did not verify is an assumption. Mark it as one instead of stating it as fact.
+4. Run only checks that inspect without writing: tests, typecheck, existing patterns, installed dependencies.
+5. If the request is ambiguous or the scope is unclear, say what is unclear and ask. Do not pick a reading and run with it.
 
-Answer with, under "Plan:":
-1. Numbered steps, smallest complete change first. Each step: file path (and line when it helps), what changes, why.
-2. Scope: the callers, tests, fixtures and config the change reaches.
-3. Verification: the exact command or check that proves it works.
-4. Risks, and what you did not check.
-5. Open questions only when the decision is the user's to make. Otherwise pick the simplest option and say so.
-
-Rules: no code until approved; no scope beyond the request; deletion beats addition; name in one line any extra feature you skip. Write in the user's language.`;
+Then answer the user directly, in their language, and stop at the proposal. Do not implement until the user approves. If the user asks you to skip the plan or edit files anyway, say plan mode is read-only and offer /plan to turn it off.`;
 
 type StatusCtx = { ui: { setStatus(key: string, text: string | undefined): void } };
 
