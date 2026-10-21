@@ -6,12 +6,12 @@ Pi extension that toggles plan mode: read-only investigation, then a numbered pl
 
 `/plan` flips the mode on and off:
 
-- **ON**: `edit` and `write` are removed from the active tools. A hidden `[PLAN MODE]` message is injected at the start of each user turn, telling the model to investigate and answer with a numbered plan under a `Plan:` header. The status bar shows `plan`.
-- **OFF**: saved tools are restored, the status indicator clears, and stale plan instructions are filtered out of the model's context.
+- **ON**: `edit` and `write` are removed from the active tools and any call to them is blocked. A `plan_mode` section is added to the system prompt: investigate first, never plan against a file you have not read, then answer with a numbered plan under a `Plan:` header covering scope, verification and risks. The status bar shows `plan`.
+- **OFF**: saved tools are restored, the status indicator clears, and the `plan_mode` section is emptied out of the system prompt.
 
 ## Not a sandbox
 
-`bash` stays available, so the model can still modify files through shell commands. Plan mode hides write tools and nudges the model toward read-only work; it does not guarantee it.
+`bash` stays available, so the model can still modify files through shell commands. Plan mode hides and blocks the write tools, and the prompt forbids writing through bash, but it does not enforce it.
 
 ## Install
 
@@ -29,7 +29,7 @@ Type `/plan` to toggle. You get `Plan mode ON` / `Plan mode OFF` notifications a
 
 ## Development
 
-Self-check runs the extension against a mock `ExtensionAPI` and asserts toggle, injection and context-filtering behavior:
+Self-check runs the extension against a mock `ExtensionAPI` and asserts toggle, prompt-section and write-blocking behavior:
 
 ```bash
 node selfcheck.ts
