@@ -1,8 +1,11 @@
 {
   "name": "pi-bareplan",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "license": "Apache-2.0",
   "keywords": ["pi-package"],
+  "pi": {
+    "extensions": ["./index.ts"]
+  },
   "exports": "./index.ts"
 }
