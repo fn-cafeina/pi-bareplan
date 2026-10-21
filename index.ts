@@ -1,11 +1,25 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
 // Not a sandbox: bash stays available, so this hides write tools and reminds the
-// model, it does not guarantee read-only against shell commands.
+// model; it does not guarantee read-only against shell commands.
 const WRITE_TOOLS = new Set(["edit", "write"]);
 
-const PLAN_CONTEXT = `[PLAN MODE]
-Read-only. No modifiques nada. Investiga con read/grep/bash y responde con un plan numerado bajo cabecera "Plan:".`;
+const PLAN_CONTRACT = `[PLAN MODE] Read-only. Do not modify files, and do not write through bash either.
+
+Before you write the plan:
+1. Locate the code: grep and read every file the change touches, and every caller of each function you would edit.
+2. Read them. Never plan against a file you have not read, and never invent an API, signature, config key or command.
+3. Check what can be checked read-only: tests, typecheck, existing patterns, installed dependencies.
+4. Keep a clear split between what you verified and what you could not.
+
+Answer with, under "Plan:":
+1. Numbered steps, smallest complete change first. Each step: file path (and line when it helps), what changes, why.
+2. Scope: the callers, tests, fixtures and config the change reaches.
+3. Verification: the exact command or check that proves it works.
+4. Risks, and what you did not check.
+5. Open questions only when the decision is the user's to make. Otherwise pick the simplest option and say so.
+
+Rules: no code until approved; no scope beyond the request; deletion beats addition; name in one line any extra feature you skip. Write in the user's language.`;
 
 export default function (pi: ExtensionAPI) {
   let enabled = false;
@@ -31,22 +45,9 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
+  // A system prompt section: set once, and Pi sends a transcript delta instead of a
+  // repeated hidden message. Empty content drops the section again.
   pi.on("before_agent_start", async (event) => {
-    if (!enabled || event.messageType !== "user") return;
-    return {
-      message: {
-        customType: "plan-mode-context",
-        content: PLAN_CONTEXT,
-        display: false,
-      },
-    };
-  });
-
-  // Drop stale plan instructions from the model's view once the mode is off.
-  pi.on("context", async (event) => {
-    if (enabled) return;
-    return {
-      messages: event.messages.filter((m) => (m as { customType?: string }).customType !== "plan-mode-context"),
-    };
+    event.systemPromptOptions.sections.plan_mode = enabled ? PLAN_CONTRACT : "";
   });
 }

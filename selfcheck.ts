@@ -23,17 +23,11 @@ assert.deepStrictEqual(calls[0].tools, ["read", "bash", "search"], "ON: edit/wri
 assert.equal(status, "plan");
 assert.deepStrictEqual(notifications, ["Plan mode ON"]);
 
-// injection while ON
-const injected = await handlers.before_agent_start({ messageType: "user" });
-assert.equal(injected.message.display, false);
-assert.equal(injected.message.customType, "plan-mode-context");
-assert.match(injected.message.content, /PLAN MODE/);
-
-// no injection for non-user runs
-assert.equal(await handlers.before_agent_start({ messageType: "custom" }), undefined);
-
-// context NOT filtered while ON
-assert.equal(await handlers.context({ messages: [{ customType: "plan-mode-context" }] }), undefined);
+// ON: contract lands in the system prompt section, nothing injected as a message
+const onPrompt = { systemPromptOptions: { sections: {} as Record<string, string> } };
+assert.equal(await handlers.before_agent_start(onPrompt), undefined, "ON: no hidden message");
+assert.match(onPrompt.systemPromptOptions.sections.plan_mode, /PLAN MODE/);
+assert.match(onPrompt.systemPromptOptions.sections.plan_mode, /grep/);
 
 // toggle OFF: tools restored, status cleared
 await handlers.command.handler([], ctx);
@@ -41,9 +35,10 @@ assert.deepStrictEqual(calls[1].tools, ["read", "bash", "edit", "write", "search
 assert.equal(status, undefined);
 assert.equal(notifications[1], "Plan mode OFF");
 
-// context filtered while OFF
-const filtered = await handlers.context({ messages: [{ customType: "plan-mode-context" }, { role: "user", content: "hi" }] });
-assert.deepStrictEqual(filtered.messages, [{ role: "user", content: "hi" }], "OFF: stale plan msg dropped");
+// OFF: stale section cleared, writes allowed again
+const offPrompt = { systemPromptOptions: { sections: { plan_mode: "stale" } } };
+await handlers.before_agent_start(offPrompt);
+assert.equal(offPrompt.systemPromptOptions.sections.plan_mode, "", "OFF: section cleared");
 
 // second ON re-snapshots current tools (savedTools cleared on OFF)
 await handlers.command.handler([], ctx);
