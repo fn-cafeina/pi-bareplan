@@ -2,29 +2,20 @@
 
 [![npm](https://img.shields.io/npm/v/pi-bareplan)](https://www.npmjs.com/package/pi-bareplan) [![license](https://img.shields.io/npm/l/pi-bareplan)](https://github.com/fn-cafeina/pi-bareplan/blob/main/LICENSE)
 
-Pi extension that starts every session in plan mode. The model investigates without touching anything, then hands you a numbered plan before it changes files. `/plan` turns the mode off for the session.
+Pi extension that starts every session in plan mode. The model investigates without touching anything, and proposes the change before it writes. `/plan` turns the mode off for the session.
 
 ## How it works
 
 Plan mode is on when a session starts, and the status bar shows `plan: ON`. While it is on:
 
 - `edit` and `write` are removed from the tool set Pi declares to the model, and any call to them is blocked.
-- A hidden `[PLAN MODE]` message is attached to every user turn. It tells the model to investigate first, to never plan against a file it has not read, and to answer under a `Plan:` header.
-- The same message tells the model to reply briefly to a greeting, with no tools and no plan.
+- A hidden `[PLAN MODE]` message is attached to every user turn. It forbids any action whose purpose is to change state, shell commands included, and requires every claim about the code to come from a file the model read in that session. Anything unverified has to be marked as an assumption.
+- It closes the usual escape routes: ambiguous scope gets a question instead of a guess, nothing is implemented before you approve, and a request to edit anyway gets a pointer to `/plan` instead of a silent exception.
+- The reminder does not dictate reply shape, language or sections. Formatting stays with the harness and your own instructions.
 
 The reminder repeats on every turn on purpose. A single system prompt section is easy for small models to drop, especially next to a direct request to implement.
 
 `/plan` turns the mode off for the current session. The saved tools come back, the status bar shows `plan: OFF`, and the plan messages are filtered out of the model's context. The next session starts in plan mode again.
-
-## What the model returns
-
-The plan covers, in this order:
-
-1. Numbered steps, smallest complete change first. Each step names the file path, what changes and why.
-2. Scope: the callers, tests, fixtures and config the change reaches.
-3. Verification: the command that proves it works.
-4. Risks, and what was not checked.
-5. Open questions, but only when the decision is yours. Otherwise the model picks the simplest option and says so.
 
 ## Not a sandbox
 
