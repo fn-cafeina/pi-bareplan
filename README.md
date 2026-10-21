@@ -23,7 +23,7 @@ pi install git:github.com/fn-cafeina/pi-bareplan    # from git
 pi install ./pi-bareplan                            # local path
 ```
 
-The package carries `"keywords": ["pi-package"]`, so Pi discovers `index.ts` without a `pi` manifest in `package.json`.
+The `pi.extensions` manifest points Pi at `./index.ts`; the `pi-package` keyword makes the package eligible for the Pi package gallery.
 
 ## Usage
 
