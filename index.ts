@@ -46,10 +46,25 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  // A system prompt section: set once, and Pi sends a transcript delta instead of a
-  // repeated hidden message. Empty content drops the section again.
+  // Hidden per-turn message right after the user prompt: small models follow a
+  // reminder next to the request more reliably than a one-time system prompt section.
   pi.on("before_agent_start", async (event) => {
-    event.systemPromptOptions.sections.plan_mode = enabled ? PLAN_CONTRACT : "";
+    if (!enabled || event.messageType !== "user") return;
+    return {
+      message: {
+        customType: "plan-mode-context",
+        content: PLAN_CONTRACT,
+        display: false,
+      },
+    };
+  });
+
+  // Drop stale plan instructions from the model's view once the mode is off.
+  pi.on("context", async (event) => {
+    if (enabled) return;
+    return {
+      messages: event.messages.filter((m) => (m as { customType?: string }).customType !== "plan-mode-context"),
+    };
   });
 
   // Keep the guarantee when another extension re-enables a write tool or calls it nested.

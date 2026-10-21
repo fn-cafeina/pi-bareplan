@@ -23,19 +23,24 @@ assert.deepStrictEqual(calls[0].tools, ["read", "bash", "search"], "ON: edit/wri
 assert.equal(status, "plan");
 assert.deepStrictEqual(notifications, ["Plan mode ON"]);
 
-// ON: contract lands in the system prompt section, nothing injected as a message
-const onPrompt = { systemPromptOptions: { sections: {} as Record<string, string> } };
-assert.equal(await handlers.before_agent_start(onPrompt), undefined, "ON: no hidden message");
-assert.match(onPrompt.systemPromptOptions.sections.plan_mode, /PLAN MODE/);
-assert.match(onPrompt.systemPromptOptions.sections.plan_mode, /grep/);
+// ON: contract attached as a hidden message on every user turn, not a system section
+const onPrompt = { messageType: "user", systemPromptOptions: { sections: {} as Record<string, string> } };
+const reminder = await handlers.before_agent_start(onPrompt);
+assert.equal(reminder.message.customType, "plan-mode-context", "ON: hidden message customType");
+assert.equal(reminder.message.display, false, "ON: message hidden");
+assert.match(reminder.message.content, /PLAN MODE/);
+assert.match(reminder.message.content, /grep/);
+assert.equal(onPrompt.systemPromptOptions.sections.plan_mode, undefined, "ON: no system section");
+assert.equal(await handlers.before_agent_start({ messageType: "custom" }), undefined, "custom run: no reminder");
 
-// ON: write calls blocked, read/bash untouched
+// ON: write calls blocked, read/bash untouched, history kept
 const blocked = await handlers.tool_call({ toolName: "write" });
 assert.equal(blocked.block, true, "ON: write blocked");
 assert.match(blocked.reason, /read-only/);
 assert.equal((await handlers.tool_call({ toolName: "edit" })).block, true, "ON: edit blocked");
 assert.equal(await handlers.tool_call({ toolName: "bash" }), undefined, "ON: bash allowed");
 assert.equal(await handlers.tool_call({ toolName: "read" }), undefined, "ON: read allowed");
+assert.equal(await handlers.context({ messages: [] }), undefined, "ON: context untouched");
 
 // toggle OFF: tools restored, status cleared
 await handlers.command.handler([], ctx);
@@ -43,14 +48,16 @@ assert.deepStrictEqual(calls[1].tools, ["read", "bash", "edit", "write", "search
 assert.equal(status, undefined);
 assert.equal(notifications[1], "Plan mode OFF");
 
-// OFF: stale section cleared, writes allowed again
-const offPrompt = { systemPromptOptions: { sections: { plan_mode: "stale" } } };
-await handlers.before_agent_start(offPrompt);
-assert.equal(offPrompt.systemPromptOptions.sections.plan_mode, "", "OFF: section cleared");
+// OFF: no reminder, stale plan messages filtered, writes allowed again
+assert.equal(await handlers.before_agent_start({ messageType: "user" }), undefined, "OFF: no reminder");
+const filtered = await handlers.context({ messages: [{ customType: "plan-mode-context" }, { role: "user" }] });
+assert.deepStrictEqual(filtered.messages, [{ role: "user" }], "OFF: stale plan message dropped");
 assert.equal(await handlers.tool_call({ toolName: "edit" }), undefined, "OFF: writes allowed");
 
 // second ON re-snapshots current tools (savedTools cleared on OFF)
 await handlers.command.handler([], ctx);
 assert.deepStrictEqual(calls[2].tools, ["read", "bash", "search"], "second ON: filters again");
+const again = await handlers.before_agent_start({ messageType: "user" });
+assert.equal(again.message.customType, "plan-mode-context", "second ON: reminder again");
 
 console.log("ok — all assertions passed");

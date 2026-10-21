@@ -6,8 +6,10 @@ Pi extension that toggles plan mode: read-only investigation, then a numbered pl
 
 `/plan` flips the mode on and off:
 
-- **ON**: `edit` and `write` are removed from the active tools and any call to them is blocked. A `plan_mode` section is added to the system prompt: investigate first, never plan against a file you have not read, then answer with a numbered plan under a `Plan:` header covering scope, verification and risks. The status bar shows `plan`.
-- **OFF**: saved tools are restored, the status indicator clears, and the `plan_mode` section is emptied out of the system prompt.
+- **ON**: `edit` and `write` are removed from the active tools and any call to them is blocked. A hidden `[PLAN MODE]` message is attached to every user turn: investigate first, never plan against a file you have not read, then answer with a numbered plan under a `Plan:` header covering scope, verification and risks. The status bar shows `plan`.
+- **OFF**: saved tools are restored, the status indicator clears, and stale `[PLAN MODE]` messages are filtered out of the model's context.
+
+The reminder repeats on every turn on purpose. A one-time system prompt section is easy for small models to drop, especially next to a direct request to implement.
 
 ## Not a sandbox
 
