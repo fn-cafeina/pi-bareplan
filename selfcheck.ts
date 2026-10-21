@@ -29,6 +29,14 @@ assert.equal(await handlers.before_agent_start(onPrompt), undefined, "ON: no hid
 assert.match(onPrompt.systemPromptOptions.sections.plan_mode, /PLAN MODE/);
 assert.match(onPrompt.systemPromptOptions.sections.plan_mode, /grep/);
 
+// ON: write calls blocked, read/bash untouched
+const blocked = await handlers.tool_call({ toolName: "write" });
+assert.equal(blocked.block, true, "ON: write blocked");
+assert.match(blocked.reason, /read-only/);
+assert.equal((await handlers.tool_call({ toolName: "edit" })).block, true, "ON: edit blocked");
+assert.equal(await handlers.tool_call({ toolName: "bash" }), undefined, "ON: bash allowed");
+assert.equal(await handlers.tool_call({ toolName: "read" }), undefined, "ON: read allowed");
+
 // toggle OFF: tools restored, status cleared
 await handlers.command.handler([], ctx);
 assert.deepStrictEqual(calls[1].tools, ["read", "bash", "edit", "write", "search"], "OFF: restored");
@@ -39,6 +47,7 @@ assert.equal(notifications[1], "Plan mode OFF");
 const offPrompt = { systemPromptOptions: { sections: { plan_mode: "stale" } } };
 await handlers.before_agent_start(offPrompt);
 assert.equal(offPrompt.systemPromptOptions.sections.plan_mode, "", "OFF: section cleared");
+assert.equal(await handlers.tool_call({ toolName: "edit" }), undefined, "OFF: writes allowed");
 
 // second ON re-snapshots current tools (savedTools cleared on OFF)
 await handlers.command.handler([], ctx);

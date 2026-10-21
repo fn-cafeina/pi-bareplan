@@ -1,7 +1,7 @@
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-// Not a sandbox: bash stays available, so this hides write tools and reminds the
-// model; it does not guarantee read-only against shell commands.
+// Not a sandbox: bash stays available, so this hides write tools and blocks edit/write
+// calls; it does not guarantee read-only against shell commands.
 const WRITE_TOOLS = new Set(["edit", "write"]);
 
 const PLAN_CONTRACT = `[PLAN MODE] Read-only. Do not modify files, and do not write through bash either.
@@ -49,5 +49,12 @@ export default function (pi: ExtensionAPI) {
   // repeated hidden message. Empty content drops the section again.
   pi.on("before_agent_start", async (event) => {
     event.systemPromptOptions.sections.plan_mode = enabled ? PLAN_CONTRACT : "";
+  });
+
+  // Keep the guarantee when another extension re-enables a write tool or calls it nested.
+  pi.on("tool_call", async (event) => {
+    if (enabled && WRITE_TOOLS.has(event.toolName)) {
+      return { block: true, reason: "Plan mode is read-only. Present the plan and wait for approval." };
+    }
   });
 }
