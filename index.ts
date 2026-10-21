@@ -30,7 +30,7 @@ export default function (pi: ExtensionAPI) {
   let enabled = false;
   let savedTools: string[] | undefined;
 
-  const setStatus = (ctx: StatusCtx) => ctx.ui.setStatus("bareplan", enabled ? "plan" : undefined);
+  const setStatus = (ctx: StatusCtx) => ctx.ui.setStatus("bareplan", enabled ? "plan: ON" : "plan: OFF");
 
   const enable = (ctx: StatusCtx) => {
     enabled = true;
@@ -51,10 +51,8 @@ export default function (pi: ExtensionAPI) {
     handler: (_args, ctx) => {
       if (enabled) {
         disable(ctx);
-        ctx.ui.notify("Plan mode OFF", "info");
       } else {
         enable(ctx);
-        ctx.ui.notify("Plan mode ON", "info");
       }
     },
   });
