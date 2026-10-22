@@ -41,12 +41,13 @@ Plan mode is active from the first turn. Type `/plan` to switch it off, and agai
 The self check loads the extension with a mock `ExtensionAPI` and asserts the mode behavior: default state, toggle, contract, OFF notice, notice pruning and write blocking.
 
 ```bash
-node selfcheck.ts
+npm test
 npm run typecheck
 npm run lint
+npm run format
 ```
 
-`npm run lint` runs Biome (lint + format check); `biome check --write .` applies the formatting. Type checking needs the dev dependencies (`npm install` first): typescript, `@types/node` and the pi package for the `ExtensionAPI` types. There are no runtime dependencies.
+`npm run lint` and `npm run format` check without touching files; `biome check --write .` applies the formatting. Type checking needs the dev dependencies (`npm install` first): typescript, `@types/node` and the pi package for the `ExtensionAPI` types. There are no runtime dependencies.
 
 Requires Node >= 22.18, the first release where type stripping runs without a flag.
 

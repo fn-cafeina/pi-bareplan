@@ -21,7 +21,8 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
-      - run: node selfcheck.ts
+      - run: npm run format
+      - run: npm test
       - run: npm publish --access public
       - run: gh release create "$GITHUB_REF_NAME" --generate-notes
         env:

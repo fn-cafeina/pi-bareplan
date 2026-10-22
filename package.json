@@ -4,8 +4,10 @@
   "type": "module",
   "license": "Apache-2.0",
   "scripts": {
+    "test": "node selfcheck.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check ."
+    "lint": "biome lint .",
+    "format": "biome format ."
   },
   "description": "Pi extension that starts every session in plan mode: read-only investigation, then a numbered plan before any file changes.",
   "repository": {
