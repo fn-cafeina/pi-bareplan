@@ -5,10 +5,14 @@ import ext from "./index.ts";
 const calls: { op: string; tools?: string[] }[] = [];
 const handlers: Record<string, any> = {};
 let status: string | undefined;
+let active = ["read", "bash", "edit", "write", "search"];
 
 const pi = {
-  getActiveTools: () => ["read", "bash", "edit", "write", "search"],
-  setActiveTools: (tools: string[]) => calls.push({ op: "setActiveTools", tools }),
+  getActiveTools: () => active,
+  setActiveTools: (tools: string[]) => {
+    active = tools;
+    calls.push({ op: "setActiveTools", tools: [...tools] });
+  },
   registerCommand: (_name: string, opts: any) => (handlers.command = opts),
   on: (event: string, fn: Function) => (handlers[event] = fn),
 };
@@ -140,5 +144,15 @@ assert.deepStrictEqual(
 await handlers.session_start({ reason: "new" }, ctx);
 assert.deepStrictEqual(calls[4].tools, ["read", "bash", "search"], "new session: plan ON again");
 assert.equal(status, "plan: ON");
+
+// a tool another extension registered during plan mode survives turning it off
+pi.setActiveTools([...active, "mcp_tool"]);
+await handlers.command.handler([], ctx);
+assert.deepStrictEqual(
+  active,
+  ["read", "bash", "edit", "write", "search", "mcp_tool"],
+  "OFF: late-registered tool kept alongside restored write tools",
+);
+assert.equal(status, "plan: OFF");
 
 console.log("ok — all assertions passed");
