@@ -1,7 +1,5 @@
 # pi-bareplan
 
-[![npm](https://img.shields.io/npm/v/pi-bareplan)](https://www.npmjs.com/package/pi-bareplan) [![license](https://img.shields.io/npm/l/pi-bareplan)](https://github.com/fn-cafeina/pi-bareplan/blob/main/LICENSE)
-
 Pi extension that starts every session in plan mode. The model investigates without touching anything, and proposes the change before it writes. `/plan` turns the mode off for the session.
 
 ## How it works
