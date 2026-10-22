@@ -1,4 +1,4 @@
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
 // Not a sandbox: bash stays available, so this hides write tools and blocks edit/write
 // calls; it does not guarantee read-only against shell commands.
@@ -23,23 +23,21 @@ Then answer the user directly, in their language, and stop at the proposal. Do n
 // OFF needs a positive signal; otherwise the model keeps repeating its earlier plan-mode answers.
 const PLAN_OFF_NOTICE = `[PLAN MODE OFF] Plan mode is off for this session. Writes are allowed. Do not claim plan mode is active or ask for approval before editing.`;
 
-type StatusCtx = { ui: { setStatus(key: string, text: string | undefined): void } };
-
 export default function (pi: ExtensionAPI) {
   let enabled = false;
   let savedTools: string[] | undefined;
 
-  const setStatus = (ctx: StatusCtx) =>
+  const setStatus = (ctx: ExtensionContext) =>
     ctx.ui.setStatus("bareplan", enabled ? "plan: ON" : "plan: OFF");
 
-  const enable = (ctx: StatusCtx) => {
+  const enable = (ctx: ExtensionContext) => {
     enabled = true;
     savedTools ??= pi.getActiveTools();
     pi.setActiveTools(savedTools.filter((t) => !WRITE_TOOLS.has(t)));
     setStatus(ctx);
   };
 
-  const disable = (ctx: StatusCtx) => {
+  const disable = (ctx: ExtensionContext) => {
     enabled = false;
     // Union, not snapshot: tools another extension added during plan mode must survive.
     const active = pi.getActiveTools();
