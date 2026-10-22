@@ -18,6 +18,8 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
       - run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+      - run: npm ci
+      - run: npm run typecheck
       - run: node selfcheck.ts
       - run: npm publish --access public
       - run: gh release create "$GITHUB_REF_NAME" --generate-notes

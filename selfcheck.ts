@@ -3,7 +3,7 @@ import assert from "node:assert";
 import ext from "./index.ts";
 
 const calls: { op: string; tools?: string[] }[] = [];
-const handlers: Record<string, Function> = {};
+const handlers: Record<string, any> = {};
 let status: string | undefined;
 
 const pi = {

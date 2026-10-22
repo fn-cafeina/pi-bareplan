@@ -47,7 +47,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("plan", {
     description: "Toggle plan mode (read-only)",
-    handler: (_args, ctx) => {
+    handler: async (_args, ctx) => {
       if (enabled) {
         disable(ctx);
       } else {

@@ -3,6 +3,9 @@
   "version": "0.1.8",
   "type": "module",
   "license": "Apache-2.0",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
   "description": "Pi extension that starts every session in plan mode: read-only investigation, then a numbered plan before any file changes.",
   "repository": {
     "type": "git",
@@ -20,5 +23,10 @@
       "./index.ts"
     ]
   },
-  "exports": "./index.ts"
+  "exports": "./index.ts",
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^1.4.0",
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  }
 }

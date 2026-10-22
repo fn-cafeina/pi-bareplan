@@ -43,9 +43,12 @@ The self check loads the extension with a mock `ExtensionAPI` and asserts the mo
 
 ```bash
 node selfcheck.ts
+npm run typecheck
 ```
 
-Requires Node >= 22.18, the first release where type stripping runs without a flag. No dependencies.
+Type checking needs the dev dependencies (`npm install` first): typescript, `@types/node` and the pi package for the `ExtensionAPI` types. There are no runtime dependencies.
+
+Requires Node >= 22.18, the first release where type stripping runs without a flag.
 
 The `pi` manifest in `package.json` points Pi at `./index.ts`.
 
