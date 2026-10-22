@@ -20,6 +20,7 @@ jobs:
       - run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run lint
       - run: node selfcheck.ts
       - run: npm publish --access public
       - run: gh release create "$GITHUB_REF_NAME" --generate-notes

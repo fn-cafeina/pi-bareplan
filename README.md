@@ -5,7 +5,6 @@ Pi extension that starts every session in plan mode. The model investigates with
 ## How it works
 
 Plan mode is on when a session starts, and the status bar shows `plan: ON`. While it is on:
-
 - `edit` and `write` are removed from the tool set Pi declares to the model, and any call to them is blocked.
 - A hidden `[PLAN MODE]` message is attached to every user turn. It forbids any action whose purpose is to change state, shell commands included, and requires every claim about the code to come from a file the model read in that session. Anything unverified has to be marked as an assumption.
 - It closes the usual escape routes: ambiguous scope gets a question instead of a guess, nothing is implemented before you approve, and a request to edit anyway gets a pointer to `/plan` instead of a silent exception.
@@ -44,9 +43,10 @@ The self check loads the extension with a mock `ExtensionAPI` and asserts the mo
 ```bash
 node selfcheck.ts
 npm run typecheck
+npm run lint
 ```
 
-Type checking needs the dev dependencies (`npm install` first): typescript, `@types/node` and the pi package for the `ExtensionAPI` types. There are no runtime dependencies.
+`npm run lint` runs Biome (lint + format check); `biome check --write .` applies the formatting. Type checking needs the dev dependencies (`npm install` first): typescript, `@types/node` and the pi package for the `ExtensionAPI` types. There are no runtime dependencies.
 
 Requires Node >= 22.18, the first release where type stripping runs without a flag.
 

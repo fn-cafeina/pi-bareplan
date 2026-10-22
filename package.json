@@ -4,7 +4,8 @@
   "type": "module",
   "license": "Apache-2.0",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check ."
   },
   "description": "Pi extension that starts every session in plan mode: read-only investigation, then a numbered plan before any file changes.",
   "repository": {
@@ -25,6 +26,7 @@
   },
   "exports": "./index.ts",
   "devDependencies": {
+    "@biomejs/biome": "^2.6.2",
     "@earendil-works/pi-coding-agent": "^1.4.0",
     "@types/node": "^26.6.5",
     "typescript": "^7.0.2"

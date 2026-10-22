@@ -29,7 +29,8 @@ export default function (pi: ExtensionAPI) {
   let enabled = false;
   let savedTools: string[] | undefined;
 
-  const setStatus = (ctx: StatusCtx) => ctx.ui.setStatus("bareplan", enabled ? "plan: ON" : "plan: OFF");
+  const setStatus = (ctx: StatusCtx) =>
+    ctx.ui.setStatus("bareplan", enabled ? "plan: ON" : "plan: OFF");
 
   const enable = (ctx: StatusCtx) => {
     enabled = true;
@@ -79,7 +80,7 @@ export default function (pi: ExtensionAPI) {
     const state = (m: unknown) => (m as { customType?: string }).customType;
     const lastKeep = event.messages.findLastIndex((m) => state(m) === keep);
     const filtered = event.messages.filter((m, i) =>
-      state(m) === keep ? i === lastKeep : state(m) !== drop
+      state(m) === keep ? i === lastKeep : state(m) !== drop,
     );
     if (filtered.length === event.messages.length) return;
     return { messages: filtered };
@@ -88,7 +89,10 @@ export default function (pi: ExtensionAPI) {
   // Keep the guarantee when another extension re-enables a write tool or calls it nested.
   pi.on("tool_call", async (event) => {
     if (enabled && WRITE_TOOLS.has(event.toolName)) {
-      return { block: true, reason: "Plan mode is read-only. Present the plan and wait for approval." };
+      return {
+        block: true,
+        reason: "Plan mode is read-only. Present the plan and wait for approval.",
+      };
     }
   });
 }
