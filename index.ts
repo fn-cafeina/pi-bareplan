@@ -41,7 +41,9 @@ export default function (pi: ExtensionAPI) {
 
   const disable = (ctx: StatusCtx) => {
     enabled = false;
-    pi.setActiveTools(savedTools ?? pi.getActiveTools());
+    // Union, not snapshot: tools another extension added during plan mode must survive.
+    const active = pi.getActiveTools();
+    pi.setActiveTools(savedTools ? [...new Set([...savedTools, ...active])] : active);
     savedTools = undefined;
     setStatus(ctx);
   };
