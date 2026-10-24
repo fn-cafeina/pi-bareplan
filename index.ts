@@ -32,7 +32,10 @@ export default function (pi: ExtensionAPI) {
 
   const enable = (ctx: ExtensionContext) => {
     enabled = true;
-    savedTools ??= pi.getActiveTools();
+    // Merge, not freeze: tools another extension activated since the last
+    // session must survive a second session_start while already ON.
+    const current = pi.getActiveTools();
+    savedTools = savedTools ? [...new Set([...savedTools, ...current])] : current;
     pi.setActiveTools(savedTools.filter((t) => !WRITE_TOOLS.has(t)));
     setStatus(ctx);
   };

@@ -166,4 +166,14 @@ assert.deepStrictEqual(
 );
 assert.equal(status, "plan: OFF");
 
+// a tool activated while ON survives a second session_start
+await handlers.command.handler([], ctx);
+pi.setActiveTools([...active, "mcp_tool2"]);
+await handlers.command.handler([], ctx);
+await handlers.session_start({ reason: "new" }, ctx);
+assert.ok(active.includes("mcp_tool2"), "second session: late tool kept in snapshot");
+await handlers.command.handler([], ctx);
+assert.ok(active.includes("mcp_tool2"), "OFF: late tool survives after second session");
+assert.equal(status, "plan: OFF");
+
 console.log("ok — all assertions passed");
