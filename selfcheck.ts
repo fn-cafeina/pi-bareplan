@@ -155,4 +155,15 @@ assert.deepStrictEqual(
 );
 assert.equal(status, "plan: OFF");
 
+// a tool another extension removed during plan mode stays removed
+await handlers.command.handler([], ctx);
+pi.setActiveTools(active.filter((t) => t !== "search"));
+await handlers.command.handler([], ctx);
+assert.deepStrictEqual(
+  active,
+  ["read", "bash", "edit", "write", "mcp_tool"],
+  "OFF: extension-removed tool stays removed, write tools restored",
+);
+assert.equal(status, "plan: OFF");
+
 console.log("ok — all assertions passed");

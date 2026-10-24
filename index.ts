@@ -39,9 +39,17 @@ export default function (pi: ExtensionAPI) {
 
   const disable = (ctx: ExtensionContext) => {
     enabled = false;
-    // Union, not snapshot: tools another extension added during plan mode must survive.
+    // Restore only what plan mode removed; adds and removes by others survive.
     const active = pi.getActiveTools();
-    pi.setActiveTools(savedTools ? [...new Set([...savedTools, ...active])] : active);
+    const saved = savedTools;
+    pi.setActiveTools(
+      saved
+        ? [
+            ...saved.filter((t) => WRITE_TOOLS.has(t) || active.includes(t)),
+            ...active.filter((t) => !saved.includes(t)),
+          ]
+        : active,
+    );
     savedTools = undefined;
     setStatus(ctx);
   };
