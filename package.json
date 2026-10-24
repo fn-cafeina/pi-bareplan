@@ -9,7 +9,7 @@
     "lint": "biome lint .",
     "format": "biome format ."
   },
-  "description": "Pi extension that starts every session in plan mode: read-only investigation, then a numbered plan before any file changes.",
+  "description": "Pi extension that starts every session in plan mode: read-only investigation, then a proposal before any file changes.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/fn-cafeina/pi-bareplan.git"
