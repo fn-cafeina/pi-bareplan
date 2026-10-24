@@ -2,17 +2,13 @@
 import assert from "node:assert";
 import ext from "./index.ts";
 
-const calls: { op: string; tools?: string[] }[] = [];
 const handlers: Record<string, any> = {};
 let status: string | undefined;
 let active = ["read", "bash", "edit", "write", "search"];
 
 const pi = {
   getActiveTools: () => active,
-  setActiveTools: (tools: string[]) => {
-    active = tools;
-    calls.push({ op: "setActiveTools", tools: [...tools] });
-  },
+  setActiveTools: (tools: string[]) => (active = tools),
   registerCommand: (_name: string, opts: any) => (handlers.command = opts),
   on: (event: string, fn: Function) => (handlers[event] = fn),
 };
@@ -22,11 +18,7 @@ ext(pi as any);
 
 // session_start: plan mode is ON by default
 await handlers.session_start({ reason: "startup" }, ctx);
-assert.deepStrictEqual(
-  calls[0].tools,
-  ["read", "bash", "search"],
-  "default ON: edit/write filtered",
-);
+assert.deepStrictEqual(active, ["read", "bash", "search"], "default ON: edit/write filtered");
 assert.equal(status, "plan: ON");
 
 // ON: contract attached as a hidden message on every user turn, not a system section
@@ -78,11 +70,7 @@ assert.deepStrictEqual(
 
 // toggle OFF: tools restored, status shows OFF
 await handlers.command.handler([], ctx);
-assert.deepStrictEqual(
-  calls[1].tools,
-  ["read", "bash", "edit", "write", "search"],
-  "OFF: restored",
-);
+assert.deepStrictEqual(active, ["read", "bash", "edit", "write", "search"], "OFF: restored");
 assert.equal(status, "plan: OFF");
 
 // OFF: explicit notice, stale state pruned, writes allowed again
@@ -118,7 +106,7 @@ assert.equal(await handlers.tool_call({ toolName: "edit" }), undefined, "OFF: wr
 
 // second ON re-snapshots current tools (savedTools cleared on OFF)
 await handlers.command.handler([], ctx);
-assert.deepStrictEqual(calls[2].tools, ["read", "bash", "search"], "second ON: filters again");
+assert.deepStrictEqual(active, ["read", "bash", "search"], "second ON: filters again");
 const again = await handlers.before_agent_start({ messageType: "user" });
 assert.equal(again.message.customType, "plan-mode-context", "second ON: reminder again");
 const onAgain = await handlers.context({
@@ -136,13 +124,9 @@ assert.deepStrictEqual(
 
 // a new session turns plan mode back on after an OFF
 await handlers.command.handler([], ctx);
-assert.deepStrictEqual(
-  calls[3].tools,
-  ["read", "bash", "edit", "write", "search"],
-  "OFF again: restored",
-);
+assert.deepStrictEqual(active, ["read", "bash", "edit", "write", "search"], "OFF again: restored");
 await handlers.session_start({ reason: "new" }, ctx);
-assert.deepStrictEqual(calls[4].tools, ["read", "bash", "search"], "new session: plan ON again");
+assert.deepStrictEqual(active, ["read", "bash", "search"], "new session: plan ON again");
 assert.equal(status, "plan: ON");
 
 // a tool another extension registered during plan mode survives turning it off
