@@ -5,7 +5,7 @@ Pi extension that starts every session in plan mode: investigate read-only, prop
 While plan mode is on:
 - `edit` and `write` are removed from the tool set, and any call to them is blocked.
 - A hidden reminder on every user turn requires claims about the code to come from files read in that session, and stops at the proposal until you approve.
-- `bash` stays available. The prompt forbids writes through it; nothing enforces it. A write tool registered under another name is not blocked either.
+- `bash` (powershell on Windows) stays available. The prompt forbids writes through it; nothing enforces it. A write tool registered under another name is not blocked either.
 
 When the mode is off, a hidden notice tells the model writes are allowed, so it stops repeating plan-mode answers. The next session starts in plan mode again.
 
