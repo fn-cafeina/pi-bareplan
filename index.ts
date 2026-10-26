@@ -21,7 +21,7 @@ Plan with evidence, not assumptions:
 Then answer the user directly, in their language, and stop at the proposal. Do not implement until the user approves. If the user asks you to skip the plan or edit files anyway, say plan mode is read-only and offer /plan to turn it off.`;
 
 // OFF needs a positive signal; otherwise the model keeps repeating its earlier plan-mode answers.
-const PLAN_OFF_NOTICE = `[PLAN MODE OFF] Plan mode is off for this session. Writes are allowed. Do not claim plan mode is active or ask for approval before editing.`;
+const PLAN_OFF_NOTICE = `[PLAN MODE OFF] Plan mode is off for this session. Writes are allowed. Do not claim plan mode is active or ask for approval before editing. If a plan you gave earlier in this session is in the conversation, follow it; otherwise work normally.`;
 
 export default function (pi: ExtensionAPI) {
   let enabled = false;
