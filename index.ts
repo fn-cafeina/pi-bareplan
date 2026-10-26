@@ -48,8 +48,13 @@ export default function (pi: ExtensionAPI) {
     pi.setActiveTools(
       saved
         ? [
-            ...saved.filter((t) => WRITE_TOOLS.has(t) || active.includes(t)),
-            ...active.filter((t) => !saved.includes(t)),
+            ...new Set([
+              ...saved.filter((t) => WRITE_TOOLS.has(t) || active.includes(t)),
+              ...active.filter((t) => !saved.includes(t)),
+              // The snapshot can miss these after a resume restored a plan-ON
+              // transcript before session_start; Pi drops names it does not know.
+              ...WRITE_TOOLS,
+            ]),
           ]
         : active,
     );

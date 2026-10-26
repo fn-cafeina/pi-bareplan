@@ -160,4 +160,16 @@ await handlers.command.handler([], ctx);
 assert.ok(active.includes("mcp_tool2"), "OFF: late tool survives after second session");
 assert.equal(status, "plan: OFF");
 
+// resume: transcript restore can leave the write tools out of the snapshot
+active = ["read", "bash", "search"];
+await handlers.session_start({ reason: "resume" }, ctx);
+assert.deepStrictEqual(active, ["read", "bash", "search"], "resume: still filtered while ON");
+await handlers.command.handler([], ctx);
+assert.deepStrictEqual(
+  active,
+  ["read", "bash", "search", "edit", "write"],
+  "resume: OFF restores write tools the snapshot never had",
+);
+assert.equal(status, "plan: OFF");
+
 console.log("ok — all assertions passed");
