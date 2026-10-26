@@ -37,4 +37,4 @@ No runtime dependencies. Type checking needs `npm install` first. Requires Node 
 
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
