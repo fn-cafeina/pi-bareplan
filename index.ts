@@ -76,6 +76,11 @@ export default function (pi: ExtensionAPI) {
   // Start every session in plan mode; /plan turns it off for that session.
   pi.on("session_start", async (_event, ctx) => enable(ctx));
 
+  // Branch navigation replays the transcript loadout without a session_start.
+  pi.on("session_tree", async (_event, ctx) => {
+    if (enabled) enable(ctx);
+  });
+
   // Hidden per-turn state right after the user prompt: small models follow a
   // reminder next to the request more reliably than a one-time system prompt section.
   pi.on("before_agent_start", async (event) => {

@@ -172,4 +172,15 @@ assert.deepStrictEqual(
 );
 assert.equal(status, "plan: OFF");
 
+// branch navigation: transcript restore re-adds the write tools while ON
+await handlers.command.handler([], ctx);
+pi.setActiveTools(["read", "bash", "search", "edit", "write"]);
+await handlers.session_tree({}, ctx);
+assert.deepStrictEqual(
+  active,
+  ["read", "bash", "search"],
+  "session_tree: write tools removed again while ON",
+);
+assert.equal(status, "plan: ON");
+
 console.log("ok — all assertions passed");

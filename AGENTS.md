@@ -18,7 +18,8 @@ Run all four before committing. Requires Node >= 22.18 (type stripping without a
 
 - `index.ts` — the extension. `PLAN_CONTRACT` and `PLAN_OFF_NOTICE` are the hidden per-turn prompts; keep them in English.
 - `selfcheck.ts` — the test. Loads `index.ts` with a mock `ExtensionAPI` and asserts default state, toggle, contract, OFF notice, notice pruning, write blocking, tools removed by other extensions staying removed, tools activated during plan mode surviving a second session start, and a resumed plan-ON
-  transcript regaining the write tools on `/plan` off.
+  transcript regaining the write tools on `/plan` off, and branch navigation re-applying the
+  loadout while on.
 - `biome.json`, `tsconfig.json` — lint/format and typecheck config.
 - `package.json` — `pi.extensions` points Pi at `./index.ts`; `exports` is the same file.
 
