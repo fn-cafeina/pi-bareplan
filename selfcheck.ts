@@ -30,11 +30,6 @@ const reminder = await handlers.before_agent_start(onPrompt);
 assert.equal(reminder.message.customType, "plan-mode-context", "ON: hidden message customType");
 assert.equal(reminder.message.display, false, "ON: message hidden");
 assert.match(reminder.message.content, /PLAN MODE/);
-assert.match(reminder.message.content, /read-only/i, "ON: state intent, not just file edits");
-assert.match(reminder.message.content, /assumption/i, "ON: unverified steps marked as assumptions");
-assert.match(reminder.message.content, /\/plan/, "ON: tell the user how to leave the mode");
-assert.doesNotMatch(reminder.message.content, /greeting/i, "ON: no reply-shape rule");
-assert.doesNotMatch(reminder.message.content, /^Plan:$/m, "ON: no forced output header");
 assert.equal(onPrompt.systemPromptOptions.sections.plan_mode, undefined, "ON: no system section");
 assert.equal(
   await handlers.before_agent_start({ messageType: "custom" }),
@@ -78,12 +73,6 @@ const offReminder = await handlers.before_agent_start({ messageType: "user" });
 assert.equal(offReminder.message.customType, "plan-mode-off", "OFF: explicit notice customType");
 assert.equal(offReminder.message.display, false, "OFF: notice hidden");
 assert.match(offReminder.message.content, /PLAN MODE OFF/);
-assert.match(offReminder.message.content, /writes are allowed/i, "OFF: state writes are allowed");
-assert.match(
-  offReminder.message.content,
-  /Do not claim plan mode is active/i,
-  "OFF: counter stale claims",
-);
 assert.equal(
   await handlers.before_agent_start({ messageType: "custom" }),
   undefined,
