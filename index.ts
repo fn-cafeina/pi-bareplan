@@ -25,40 +25,20 @@ const PLAN_OFF_NOTICE = `[PLAN MODE OFF] Plan mode is off for this session. Writ
 
 export default function (pi: ExtensionAPI) {
   let enabled = false;
-  let savedTools: string[] | undefined;
 
   const setStatus = (ctx: ExtensionContext) =>
     ctx.ui.setStatus("bareplan", enabled ? "plan: ON" : "plan: OFF");
 
   const enable = (ctx: ExtensionContext) => {
     enabled = true;
-    // Merge, not freeze: tools another extension activated since the last
-    // session must survive a second session_start while already ON.
-    const current = pi.getActiveTools();
-    savedTools = savedTools ? [...new Set([...savedTools, ...current])] : current;
-    pi.setActiveTools(savedTools.filter((t) => !WRITE_TOOLS.has(t)));
+    pi.setActiveTools(pi.getActiveTools().filter((t) => !WRITE_TOOLS.has(t)));
     setStatus(ctx);
   };
 
   const disable = (ctx: ExtensionContext) => {
     enabled = false;
-    // Restore only what plan mode removed; adds and removes by others survive.
-    const active = pi.getActiveTools();
-    const saved = savedTools;
-    pi.setActiveTools(
-      saved
-        ? [
-            ...new Set([
-              ...saved.filter((t) => WRITE_TOOLS.has(t) || active.includes(t)),
-              ...active.filter((t) => !saved.includes(t)),
-              // The snapshot can miss these after a resume restored a plan-ON
-              // transcript before session_start; Pi drops names it does not know.
-              ...WRITE_TOOLS,
-            ]),
-          ]
-        : active,
-    );
-    savedTools = undefined;
+    // Add back what plan mode removed; adds and removes by others survive.
+    pi.setActiveTools([...new Set([...pi.getActiveTools(), ...WRITE_TOOLS])]);
     setStatus(ctx);
   };
 

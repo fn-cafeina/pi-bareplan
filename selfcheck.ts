@@ -70,7 +70,7 @@ assert.deepStrictEqual(
 
 // toggle OFF: tools restored, status shows OFF
 await handlers.command.handler([], ctx);
-assert.deepStrictEqual(active, ["read", "bash", "edit", "write", "search"], "OFF: restored");
+assert.deepStrictEqual(active, ["read", "bash", "search", "edit", "write"], "OFF: restored");
 assert.equal(status, "plan: OFF");
 
 // OFF: explicit notice, stale state pruned, writes allowed again
@@ -104,7 +104,7 @@ assert.deepStrictEqual(
 );
 assert.equal(await handlers.tool_call({ toolName: "edit" }), undefined, "OFF: writes allowed");
 
-// second ON re-snapshots current tools (savedTools cleared on OFF)
+// second ON filters the current tool set again
 await handlers.command.handler([], ctx);
 assert.deepStrictEqual(active, ["read", "bash", "search"], "second ON: filters again");
 const again = await handlers.before_agent_start({ messageType: "user" });
@@ -124,7 +124,7 @@ assert.deepStrictEqual(
 
 // a new session turns plan mode back on after an OFF
 await handlers.command.handler([], ctx);
-assert.deepStrictEqual(active, ["read", "bash", "edit", "write", "search"], "OFF again: restored");
+assert.deepStrictEqual(active, ["read", "bash", "search", "edit", "write"], "OFF again: restored");
 await handlers.session_start({ reason: "new" }, ctx);
 assert.deepStrictEqual(active, ["read", "bash", "search"], "new session: plan ON again");
 assert.equal(status, "plan: ON");
@@ -134,7 +134,7 @@ pi.setActiveTools([...active, "mcp_tool"]);
 await handlers.command.handler([], ctx);
 assert.deepStrictEqual(
   active,
-  ["read", "bash", "edit", "write", "search", "mcp_tool"],
+  ["read", "bash", "search", "mcp_tool", "edit", "write"],
   "OFF: late-registered tool kept alongside restored write tools",
 );
 assert.equal(status, "plan: OFF");
@@ -145,7 +145,7 @@ pi.setActiveTools(active.filter((t) => t !== "search"));
 await handlers.command.handler([], ctx);
 assert.deepStrictEqual(
   active,
-  ["read", "bash", "edit", "write", "mcp_tool"],
+  ["read", "bash", "mcp_tool", "edit", "write"],
   "OFF: extension-removed tool stays removed, write tools restored",
 );
 assert.equal(status, "plan: OFF");
