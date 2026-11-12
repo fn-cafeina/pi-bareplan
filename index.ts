@@ -44,13 +44,7 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("plan", {
     description: "Toggle plan mode (read-only)",
-    handler: async (_args, ctx) => {
-      if (enabled) {
-        disable(ctx);
-      } else {
-        enable(ctx);
-      }
-    },
+    handler: async (_args, ctx) => (enabled ? disable : enable)(ctx),
   });
 
   // Start every session in plan mode; /plan turns it off for that session.
