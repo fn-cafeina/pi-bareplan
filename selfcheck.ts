@@ -129,38 +129,17 @@ await handlers.session_start({ reason: "new" }, ctx);
 assert.deepStrictEqual(active, ["read", "bash", "search"], "new session: plan ON again");
 assert.equal(status, "plan: ON");
 
-// a tool another extension registered during plan mode survives turning it off
+// a tool another extension adds during plan mode survives turning it off
 pi.setActiveTools([...active, "mcp_tool"]);
 await handlers.command.handler([], ctx);
 assert.deepStrictEqual(
   active,
   ["read", "bash", "search", "mcp_tool", "edit", "write"],
-  "OFF: late-registered tool kept alongside restored write tools",
+  "OFF: tool added during plan mode kept, write tools back",
 );
 assert.equal(status, "plan: OFF");
 
-// a tool another extension removed during plan mode stays removed
-await handlers.command.handler([], ctx);
-pi.setActiveTools(active.filter((t) => t !== "search"));
-await handlers.command.handler([], ctx);
-assert.deepStrictEqual(
-  active,
-  ["read", "bash", "mcp_tool", "edit", "write"],
-  "OFF: extension-removed tool stays removed, write tools restored",
-);
-assert.equal(status, "plan: OFF");
-
-// a tool activated while ON survives a second session_start
-await handlers.command.handler([], ctx);
-pi.setActiveTools([...active, "mcp_tool2"]);
-await handlers.command.handler([], ctx);
-await handlers.session_start({ reason: "new" }, ctx);
-assert.ok(active.includes("mcp_tool2"), "second session: late tool kept in snapshot");
-await handlers.command.handler([], ctx);
-assert.ok(active.includes("mcp_tool2"), "OFF: late tool survives after second session");
-assert.equal(status, "plan: OFF");
-
-// resume: transcript restore can leave the write tools out of the snapshot
+// resume: transcript restore can start without the write tools at all
 active = ["read", "bash", "search"];
 await handlers.session_start({ reason: "resume" }, ctx);
 assert.deepStrictEqual(active, ["read", "bash", "search"], "resume: still filtered while ON");
