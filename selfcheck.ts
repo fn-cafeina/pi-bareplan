@@ -6,6 +6,7 @@ const handlers: Record<string, any> = {};
 let commandName = "";
 let status: string | undefined;
 let active = ["read", "bash", "edit", "write", "search"];
+const branch: any[] = [];
 
 const pi = {
   getActiveTools: () => active,
@@ -14,9 +15,13 @@ const pi = {
     commandName = name;
     handlers.command = opts;
   },
+  appendEntry: (customType: string) => branch.push({ type: "custom", customType }),
   on: (event: string, fn: Function) => (handlers[event] = fn),
 };
-const ctx = { ui: { setStatus: (_k: string, v?: string) => (status = v) } };
+const ctx = {
+  ui: { setStatus: (_k: string, v?: string) => (status = v) },
+  sessionManager: { getBranch: () => branch },
+};
 
 ext(pi as any);
 
@@ -69,10 +74,11 @@ assert.deepStrictEqual(
   "ON: stale OFF and ON notices pruned",
 );
 
-// toggle OFF: tools restored, status shows OFF
+// toggle OFF: tools restored, status shows OFF, state persisted
 await handlers.command.handler([], ctx);
 assert.deepStrictEqual(active, ["read", "bash", "search", "edit", "write"], "OFF: restored");
 assert.equal(status, "plan: OFF");
+assert.equal(branch.at(-1)?.customType, "bareplan-off", "OFF: state entry persisted");
 
 // OFF: explicit notice, stale state pruned, writes allowed again
 const offReminder = await handlers.before_agent_start({ messageType: "user" });
@@ -102,6 +108,7 @@ assert.equal(await handlers.tool_call({ toolName: "edit" }), undefined, "OFF: wr
 // second ON filters the current tool set again
 await handlers.command.handler([], ctx);
 assert.deepStrictEqual(active, ["read", "bash", "search"], "second ON: filters again");
+assert.equal(branch.at(-1)?.customType, "bareplan-on", "ON: state entry persisted");
 const again = await handlers.before_agent_start({ messageType: "user" });
 assert.equal(again.message.customType, "plan-mode-context", "second ON: reminder again");
 const onAgain = await handlers.context({
@@ -117,9 +124,10 @@ assert.deepStrictEqual(
   "second ON: stale OFF notice dropped",
 );
 
-// a new session turns plan mode back on after an OFF
+// a new session (empty transcript) turns plan mode back on after an OFF
 await handlers.command.handler([], ctx);
 assert.deepStrictEqual(active, ["read", "bash", "search", "edit", "write"], "OFF again: restored");
+branch.length = 0;
 await handlers.session_start({ reason: "new" }, ctx);
 assert.deepStrictEqual(active, ["read", "bash", "search"], "new session: plan ON again");
 assert.equal(status, "plan: ON");
@@ -134,15 +142,48 @@ assert.deepStrictEqual(
 );
 assert.equal(status, "plan: OFF");
 
-// resume: transcript restore can start without the write tools at all
+// resume: last state entry ON, transcript restore can start without the write tools at all
+branch.length = 0;
+branch.push({ type: "custom", customType: "bareplan-on" });
 active = ["read", "bash", "search"];
 await handlers.session_start({ reason: "resume" }, ctx);
-assert.deepStrictEqual(active, ["read", "bash", "search"], "resume: still filtered while ON");
+assert.deepStrictEqual(active, ["read", "bash", "search"], "resume ON: still filtered while ON");
 await handlers.command.handler([], ctx);
 assert.deepStrictEqual(
   active,
   ["read", "bash", "search", "edit", "write"],
-  "resume: OFF restores write tools the snapshot never had",
+  "resume ON: OFF restores write tools the snapshot never had",
+);
+assert.equal(status, "plan: OFF");
+
+// resume: last state entry OFF, session stays off with writes allowed
+branch.length = 0;
+branch.push({ type: "custom", customType: "bareplan-on" });
+branch.push({ type: "custom", customType: "bareplan-off" });
+await handlers.session_start({ reason: "resume" }, ctx);
+assert.deepStrictEqual(
+  active,
+  ["read", "bash", "search", "edit", "write"],
+  "resume OFF: write tools kept",
+);
+assert.equal(status, "plan: OFF");
+assert.equal(await handlers.tool_call({ toolName: "edit" }), undefined, "resume OFF: edit allowed");
+assert.equal(
+  (await handlers.before_agent_start({ messageType: "user" })).message.customType,
+  "plan-mode-off",
+  "resume OFF: off notice on next turn",
+);
+
+// switch to a session whose last state is OFF disables actively, even when ON in memory
+await handlers.command.handler([], ctx);
+assert.deepStrictEqual(active, ["read", "bash", "search"], "ON in memory before switch");
+branch.length = 0;
+branch.push({ type: "custom", customType: "bareplan-off" });
+await handlers.session_start({ reason: "resume" }, ctx);
+assert.deepStrictEqual(
+  active,
+  ["read", "bash", "search", "edit", "write"],
+  "switch to OFF session: write tools back",
 );
 assert.equal(status, "plan: OFF");
 

@@ -5,6 +5,9 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 const WRITE_TOOLS = new Set(["edit", "write"]);
 const PLAN_ON_TYPE = "plan-mode-context";
 const PLAN_OFF_TYPE = "plan-mode-off";
+// Last-toggle state, persisted in the session file so session_start can restore it.
+const PLAN_ON_ENTRY = "bareplan-on";
+const PLAN_OFF_ENTRY = "bareplan-off";
 
 // Keep this contract in English. Only the answer follows the user's language.
 const PLAN_CONTRACT = `[PLAN MODE] Read-only. Do not modify files, and do not write through bash either.
@@ -44,11 +47,25 @@ export default function (pi: ExtensionAPI) {
 
   pi.registerCommand("plan", {
     description: "Toggle plan mode (read-only)",
-    handler: async (_args, ctx) => (enabled ? disable : enable)(ctx),
+    handler: async (_args, ctx) => {
+      pi.appendEntry(!enabled ? PLAN_ON_ENTRY : PLAN_OFF_ENTRY);
+      (enabled ? disable : enable)(ctx);
+    },
   });
 
-  // Start every session in plan mode; /plan turns it off for that session.
-  pi.on("session_start", async (_event, ctx) => enable(ctx));
+  // Fresh sessions start in plan mode; resumed or switched ones restore the last /plan
+  // state from the transcript (custom entries never enter the LLM context).
+  pi.on("session_start", async (_event, ctx) => {
+    const last = ctx.sessionManager
+      .getBranch()
+      .findLast(
+        (e) =>
+          e.type === "custom" &&
+          (e.customType === PLAN_ON_ENTRY || e.customType === PLAN_OFF_ENTRY),
+      );
+    const off = last?.type === "custom" && last.customType === PLAN_OFF_ENTRY;
+    (off ? disable : enable)(ctx);
+  });
 
   // Branch navigation replays the transcript loadout without a session_start.
   pi.on("session_tree", async (_event, ctx) => {
