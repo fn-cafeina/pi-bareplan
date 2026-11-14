@@ -21,7 +21,7 @@ pi install ./pi-bareplan                            # local path
 
 ## Usage
 
-Plan mode is active from the first turn. Type `/plan` to switch it off, and again to switch it back on. The change lasts for the current session.
+Plan mode is active from the first turn. Type `/plan` to switch it off, and again to switch it back on. The change lasts for the current session. Resuming a previous session starts in plan mode again.
 
 ## Development
 
