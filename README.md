@@ -1,6 +1,6 @@
 # pi-bareplan
 
-Pi extension that starts every session in plan mode: investigate read-only, propose the change, then write. The status bar shows `plan: ON`.
+Pi extension that starts every new session in plan mode: investigate read-only, propose the change, then write. The status bar shows `plan: ON`.
 
 While plan mode is on:
 - `edit` and `write` are removed from the tool set, and any call to them is blocked.
@@ -21,7 +21,7 @@ pi install ./pi-bareplan                            # local path
 
 ## Usage
 
-Plan mode is active from the first turn. Type `/plan` to switch it off, and again to switch it back on. The change lasts for the current session. Resuming a previous session starts in plan mode again.
+Plan mode is active from the first turn. Type `/plan` to switch it off, and again to switch it back on. The change lasts for the current session. Resuming a previous session restores the mode it last ended in.
 
 ## Development
 
