@@ -3,18 +3,24 @@ import assert from "node:assert";
 import ext from "./index.ts";
 
 const handlers: Record<string, any> = {};
+let commandName = "";
 let status: string | undefined;
 let active = ["read", "bash", "edit", "write", "search"];
 
 const pi = {
   getActiveTools: () => active,
   setActiveTools: (tools: string[]) => (active = tools),
-  registerCommand: (_name: string, opts: any) => (handlers.command = opts),
+  registerCommand: (name: string, opts: any) => {
+    commandName = name;
+    handlers.command = opts;
+  },
   on: (event: string, fn: Function) => (handlers[event] = fn),
 };
 const ctx = { ui: { setStatus: (_k: string, v?: string) => (status = v) } };
 
 ext(pi as any);
+
+assert.equal(commandName, "plan", "toggle command registered as /plan");
 
 // session_start: plan mode is ON by default
 await handlers.session_start({ reason: "startup" }, ctx);
