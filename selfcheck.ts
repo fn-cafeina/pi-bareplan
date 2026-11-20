@@ -63,6 +63,51 @@ assert.equal(
   undefined,
   "ON: unrelated context untouched",
 );
+
+// latest ```plan block wins: stripped from the transcript, injected once, hidden
+const planned = await handlers.context({
+  messages: [
+    { role: "assistant", content: [{ type: "text", text: "before\n```plan\nold plan\n```" }] },
+    { role: "user" },
+    { role: "assistant", content: [{ type: "text", text: "mid\n```plan\nv2 plan\n```\nafter" }] },
+    { role: "user", content: "next" },
+  ],
+});
+assert.equal(planned.messages.length, 5, "plan: nothing dropped, one injection added");
+assert.deepStrictEqual(
+  planned.messages[0].content,
+  [{ type: "text", text: "before" }],
+  "plan: old block stripped",
+);
+assert.deepStrictEqual(
+  planned.messages[2].content,
+  [{ type: "text", text: "mid\n\nafter" }],
+  "plan: latest block stripped, surrounding text kept",
+);
+assert.equal(planned.messages[4].customType, "plan-mode-plan", "plan: injected as custom message");
+assert.match(planned.messages[4].content, /v2 plan/, "plan: latest body wins");
+assert.equal(planned.messages[4].display, false, "plan: hidden");
+
+// no plan anywhere: context untouched
+assert.equal(
+  await handlers.context({
+    messages: [{ role: "assistant", content: [{ type: "text", text: "no plan here" }] }],
+  }),
+  undefined,
+  "plan: absent plan leaves context alone",
+);
+
+// a previous injection with no new blocks: relocated next to the latest request
+const kept = await handlers.context({
+  messages: [
+    { customType: "plan-mode-plan", content: "[CURRENT PLAN]\nold body" },
+    { role: "user" },
+  ],
+});
+assert.equal(kept.messages.length, 2, "plan: old injection replaced, not duplicated");
+assert.equal(kept.messages[0].role, "user", "plan: injection moved after the user turn");
+assert.equal(kept.messages[1].customType, "plan-mode-plan");
+assert.match(kept.messages[1].content, /old body/, "plan: body survives the relocation");
 const onPruned = await handlers.context({
   messages: [
     { customType: "plan-mode-off", content: "old off" },

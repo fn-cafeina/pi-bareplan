@@ -15,10 +15,17 @@ const PLAN_CONTRACT = `[PLAN MODE] Read-only. No file changes, no writes through
 Changing code: read the code and every caller first, then propose. Stop there; do not implement until approved. If asked to edit anyway: plan mode is read-only, offer /plan.
 Questions and chat: answer directly, no proposal.
 Code claims: only from files read this session; otherwise say "assumption".
-Ambiguous request: ask.`;
+Ambiguous request: ask.
+
+End every change proposal with a \`\`\`plan block holding the whole current plan (goal, steps, open questions). Rewrite it complete, never append.`;
 
 // OFF needs a positive signal; otherwise the model keeps repeating its earlier plan-mode answers.
 const PLAN_OFF_NOTICE = `[PLAN MODE OFF] Plan mode is off for this session. Writes are allowed. Do not claim plan mode is active or ask for approval before editing. If a plan you gave earlier in this session is in the conversation, follow it; otherwise work normally.`;
+
+// Hidden per-turn copy of the latest plan; the transcript keeps zero copies.
+const PLAN_TYPE = "plan-mode-plan";
+const PLAN_PREFIX = "[CURRENT PLAN]\n";
+const PLAN_BLOCK = /```plan\r?\n([\s\S]*?)```/g;
 
 export default function (pi: ExtensionAPI) {
   let enabled = false;
@@ -90,17 +97,74 @@ export default function (pi: ExtensionAPI) {
     };
   });
 
-  // Keep only the latest state notice and drop the other state, so stale instructions cannot win.
+  // State notices: keep only the latest, drop the other state. Plans: strip every
+  // ```plan block from the transcript and re-inject one hidden copy next to the
+  // request, so the latest plan survives accumulated chat without growing context.
   pi.on("context", async (event) => {
     const keep = enabled ? PLAN_ON_TYPE : PLAN_OFF_TYPE;
     const drop = enabled ? PLAN_OFF_TYPE : PLAN_ON_TYPE;
     const state = (m: unknown) => (m as { customType?: string }).customType;
     const lastKeep = event.messages.findLastIndex((m) => state(m) === keep);
-    const filtered = event.messages.filter((m, i) =>
-      state(m) === keep ? i === lastKeep : state(m) !== drop,
-    );
-    if (filtered.length === event.messages.length) return;
-    return { messages: filtered };
+
+    let plan: string | undefined;
+    let dirty = false;
+    const messages: (typeof event.messages)[number][] = [];
+    for (let i = 0; i < event.messages.length; i++) {
+      const m = event.messages[i];
+      const t = state(m);
+      if (t === PLAN_TYPE) {
+        // Previous injection: the fallback plan when no newer block exists.
+        dirty = true;
+        const c = (m as { content?: unknown }).content;
+        const body = typeof c === "string" ? c.slice(PLAN_PREFIX.length) : "";
+        if (body) plan = body;
+        continue;
+      }
+      if ((t === keep && i !== lastKeep) || t === drop) {
+        dirty = true;
+        continue;
+      }
+      // Assistant message: strip plan blocks, remember the last body. Cast keeps the
+      // union narrow; the spread preserves fields the type cannot see.
+      const am = m as { role?: string; content?: Array<{ type: string; text: string }> };
+      if (am.role !== "assistant" || !am.content) {
+        messages.push(m);
+        continue;
+      }
+      let touched = false;
+      const content: Array<{ type: string; text: string }> = [];
+      for (const b of am.content) {
+        if (b.type !== "text" || !b.text.match(PLAN_BLOCK)) {
+          content.push(b);
+          continue;
+        }
+        touched = true;
+        const body = [...b.text.matchAll(PLAN_BLOCK)].at(-1)?.[1]?.trim();
+        if (body) plan = body;
+        const rest = b.text.replace(PLAN_BLOCK, "").trim();
+        if (rest) content.push({ ...b, text: rest });
+      }
+      if (!touched) {
+        messages.push(m);
+        continue;
+      }
+      dirty = true;
+      messages.push({
+        ...m,
+        content: content.length ? content : [{ type: "text", text: "(plan moved)" }],
+      } as typeof m);
+    }
+
+    if (plan) {
+      dirty = true;
+      messages.push({
+        customType: PLAN_TYPE,
+        content: PLAN_PREFIX + plan,
+        display: false,
+      } as (typeof event.messages)[number]);
+    }
+    if (!dirty) return;
+    return { messages };
   });
 
   // Keep the guarantee when another extension re-enables a write tool or calls it nested.
