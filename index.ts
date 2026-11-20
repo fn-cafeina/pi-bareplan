@@ -38,10 +38,19 @@ export default function (pi: ExtensionAPI) {
     setStatus(ctx);
   };
 
+  // A write tool the user's defaultTools setting leaves out stays out on /plan off.
+  const configAllows = (tool: string) => {
+    const selected = pi.getSettings().defaultTools;
+    return !selected || selected.includes(tool) || selected.includes(`+${tool}`);
+  };
+
   const disable = (ctx: ExtensionContext) => {
     enabled = false;
     // Add back what plan mode removed; adds and removes by others survive.
-    pi.setActiveTools([...new Set([...pi.getActiveTools(), ...WRITE_TOOLS])]);
+    // shortcut: `--tools -write` modifiers are invisible here, upgrade when ctx exposes them.
+    pi.setActiveTools([
+      ...new Set([...pi.getActiveTools(), ...[...WRITE_TOOLS].filter((t) => configAllows(t))]),
+    ]);
     setStatus(ctx);
   };
 
@@ -53,9 +62,8 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  // Fresh sessions start in plan mode; resumed or switched ones restore the last /plan
-  // state from the transcript (custom entries never enter the LLM context).
-  pi.on("session_start", async (_event, ctx) => {
+  // Saved state: last /plan entry on the branch, ON when there is none.
+  const applySavedState = (ctx: ExtensionContext) => {
     const last = ctx.sessionManager
       .getBranch()
       .findLast(
@@ -65,9 +73,14 @@ export default function (pi: ExtensionAPI) {
       );
     const off = last?.type === "custom" && last.customType === PLAN_OFF_ENTRY;
     (off ? disable : enable)(ctx);
-  });
+  };
 
-  // Branch navigation replays the transcript loadout without a session_start.
+  // Fresh sessions start in plan mode; resumed or switched ones restore the last /plan
+  // state from the transcript (custom entries never enter the LLM context).
+  pi.on("session_start", async (_event, ctx) => applySavedState(ctx));
+
+  // Branch navigation lands on a branch whose saved state may differ from memory;
+  // re-apply it in both directions.
   pi.on("session_tree", async (_event, ctx) => {
     if (enabled) enable(ctx);
   });

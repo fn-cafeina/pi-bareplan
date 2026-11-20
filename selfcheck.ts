@@ -6,6 +6,7 @@ const handlers: Record<string, any> = {};
 let commandName = "";
 let status: string | undefined;
 let active = ["read", "bash", "edit", "write", "search"];
+let settings: Record<string, unknown> = {};
 const branch: any[] = [];
 
 const pi = {
@@ -23,7 +24,7 @@ const ctx = {
   sessionManager: { getBranch: () => branch },
 };
 
-ext(pi as any);
+ext({ ...pi, getSettings: () => settings } as any);
 
 assert.equal(commandName, "plan", "toggle command registered as /plan");
 
@@ -197,5 +198,20 @@ assert.deepStrictEqual(
   "session_tree: write tools removed again while ON",
 );
 assert.equal(status, "plan: ON");
+
+// a write tool left out of the defaultTools setting is not resurrected on /plan off
+settings = { defaultTools: ["read", "bash"] };
+await handlers.command.handler([], ctx); // OFF
+branch.length = 0;
+branch.push({ type: "custom", customType: "bareplan-on" });
+await handlers.session_start({ reason: "resume" }, ctx); // ON
+await handlers.command.handler([], ctx); // OFF again
+assert.deepStrictEqual(
+  active,
+  ["read", "bash", "search"],
+  "OFF: edit/write excluded by defaultTools stay excluded",
+);
+assert.equal(status, "plan: OFF");
+settings = {};
 
 console.log("ok — all assertions passed");
