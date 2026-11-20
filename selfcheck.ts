@@ -199,6 +199,26 @@ assert.deepStrictEqual(
 );
 assert.equal(status, "plan: ON");
 
+// branch navigation applies the saved state in both directions
+branch.length = 0;
+branch.push({ type: "custom", customType: "bareplan-off" });
+await handlers.session_tree({}, ctx);
+assert.deepStrictEqual(
+  active,
+  ["read", "bash", "search", "edit", "write"],
+  "session_tree to OFF branch: write tools back",
+);
+assert.equal(status, "plan: OFF");
+branch.length = 0;
+branch.push({ type: "custom", customType: "bareplan-on" });
+await handlers.session_tree({}, ctx);
+assert.deepStrictEqual(
+  active,
+  ["read", "bash", "search"],
+  "session_tree to ON branch: write tools hidden again",
+);
+assert.equal(status, "plan: ON");
+
 // a write tool left out of the defaultTools setting is not resurrected on /plan off
 settings = { defaultTools: ["read", "bash"] };
 await handlers.command.handler([], ctx); // OFF

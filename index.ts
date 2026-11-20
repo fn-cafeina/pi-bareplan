@@ -81,9 +81,7 @@ export default function (pi: ExtensionAPI) {
 
   // Branch navigation lands on a branch whose saved state may differ from memory;
   // re-apply it in both directions.
-  pi.on("session_tree", async (_event, ctx) => {
-    if (enabled) enable(ctx);
-  });
+  pi.on("session_tree", async (_event, ctx) => applySavedState(ctx));
 
   // Hidden per-turn state right after the user prompt: small models follow a
   // reminder next to the request more reliably than a one-time system prompt section.
