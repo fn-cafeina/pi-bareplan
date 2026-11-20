@@ -10,18 +10,12 @@ const PLAN_ON_ENTRY = "bareplan-on";
 const PLAN_OFF_ENTRY = "bareplan-off";
 
 // Keep this contract in English. Only the answer follows the user's language.
-const PLAN_CONTRACT = `[PLAN MODE] Read-only. Do not modify files, and do not write through bash either.
+const PLAN_CONTRACT = `[PLAN MODE] Read-only. No file changes, no writes through bash. Inspection only.
 
-Read-only means no action whose purpose is to change state. No file edits, no shell commands that install, create, delete, move, download or commit anything, no writes dressed up as "setup", "fixes" or "cleanup". Inspection only.
-
-Plan with evidence, not assumptions:
-1. Every claim about the code must come from a file you read in this session. Never cite a path, line number, API, signature, config key or command you have not seen with your own tools.
-2. No change is too small to skip reading. Locate the code the change touches and every caller of each function you would edit, then read them.
-3. Any step that rests on something you did not verify is an assumption. Mark it as one instead of stating it as fact.
-4. Run only checks that inspect without writing: tests, typecheck, existing patterns, installed dependencies.
-5. If the request is ambiguous or the scope is unclear, say what is unclear and ask. Do not pick a reading and run with it.
-
-Then answer the user directly, in their language, and stop at the proposal. Do not implement until the user approves. If the user asks you to skip the plan or edit files anyway, say plan mode is read-only and offer /plan to turn it off.`;
+Changing code: read the code and every caller first, then propose. Stop there; do not implement until approved. If asked to edit anyway: plan mode is read-only, offer /plan.
+Questions and chat: answer directly, no proposal.
+Code claims: only from files read this session; otherwise say "assumption".
+Ambiguous request: ask.`;
 
 // OFF needs a positive signal; otherwise the model keeps repeating its earlier plan-mode answers.
 const PLAN_OFF_NOTICE = `[PLAN MODE OFF] Plan mode is off for this session. Writes are allowed. Do not claim plan mode is active or ask for approval before editing. If a plan you gave earlier in this session is in the conversation, follow it; otherwise work normally.`;

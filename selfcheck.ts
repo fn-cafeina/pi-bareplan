@@ -42,6 +42,8 @@ const reminder = await handlers.before_agent_start(onPrompt);
 assert.equal(reminder.message.customType, "plan-mode-context", "ON: hidden message customType");
 assert.equal(reminder.message.display, false, "ON: message hidden");
 assert.match(reminder.message.content, /PLAN MODE/);
+assert.match(reminder.message.content, /Questions and chat/, "ON: chat mode declared");
+assert.doesNotMatch(reminder.message.content, /assumptions:\n1\./, "ON: numbered rules gone");
 assert.equal(onPrompt.systemPromptOptions.sections.plan_mode, undefined, "ON: no system section");
 assert.equal(
   await handlers.before_agent_start({ messageType: "custom" }),
