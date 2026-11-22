@@ -5,7 +5,7 @@ Pi extension that starts every new session in plan mode: investigate read-only, 
 While plan mode is on:
 - `edit` and `write` are removed from the tool set, and any call to them is blocked.
 - A hidden reminder on every user turn requires claims about the code to come from files read in that session, and stops at the proposal until you approve.
-- The model writes its proposal in a ` ```plan ` block. The extension strips those blocks from the transcript and re-injects only the latest one as a hidden message, so the current plan stays in context without growing it.
+- The model writes its proposal as a plain list: goal, numbered steps, open questions. No fenced block, so nothing has to be stripped or re-injected.
 - `bash` (powershell on Windows) stays available. The prompt forbids writes through it; nothing enforces it. A write tool registered under another name is not blocked either.
 
 When the mode is off, a hidden notice tells the model writes are allowed, so it stops repeating plan-mode answers. The next session starts in plan mode again.
