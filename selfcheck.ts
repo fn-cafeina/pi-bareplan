@@ -43,6 +43,8 @@ assert.equal(reminder.message.customType, "plan-mode-context", "ON: hidden messa
 assert.equal(reminder.message.display, false, "ON: message hidden");
 assert.match(reminder.message.content, /PLAN MODE/);
 assert.match(reminder.message.content, /Questions and chat/, "ON: chat mode declared");
+assert.doesNotMatch(reminder.message.content, /```plan/, "ON: no fenced plan block asked for");
+assert.match(reminder.message.content, /plain plan/, "ON: plan asked in plain prose");
 assert.doesNotMatch(reminder.message.content, /assumptions:\n1\./, "ON: numbered rules gone");
 assert.equal(onPrompt.systemPromptOptions.sections.plan_mode, undefined, "ON: no system section");
 assert.equal(
@@ -64,50 +66,29 @@ assert.equal(
   "ON: unrelated context untouched",
 );
 
-// latest ```plan block wins: stripped from the transcript, injected once, hidden
-const planned = await handlers.context({
+// plans injected by the old fenced version are dropped; other messages untouched
+const legacy = await handlers.context({
   messages: [
-    { role: "assistant", content: [{ type: "text", text: "before\n```plan\nold plan\n```" }] },
+    { role: "assistant", content: [{ type: "text", text: "proposal\n\n1. do it" }] },
+    { customType: "plan-mode-plan", content: "[CURRENT PLAN]\nold body" },
     { role: "user" },
-    { role: "assistant", content: [{ type: "text", text: "mid\n```plan\nv2 plan\n```\nafter" }] },
-    { role: "user", content: "next" },
   ],
 });
-assert.equal(planned.messages.length, 5, "plan: nothing dropped, one injection added");
 assert.deepStrictEqual(
-  planned.messages[0].content,
-  [{ type: "text", text: "before" }],
-  "plan: old block stripped",
+  legacy.messages,
+  [
+    { role: "assistant", content: [{ type: "text", text: "proposal\n\n1. do it" }] },
+    { role: "user" },
+  ],
+  "plan: legacy injection dropped, assistant text kept as written",
 );
-assert.deepStrictEqual(
-  planned.messages[2].content,
-  [{ type: "text", text: "mid\n\nafter" }],
-  "plan: latest block stripped, surrounding text kept",
-);
-assert.equal(planned.messages[4].customType, "plan-mode-plan", "plan: injected as custom message");
-assert.match(planned.messages[4].content, /v2 plan/, "plan: latest body wins");
-assert.equal(planned.messages[4].display, false, "plan: hidden");
-
-// no plan anywhere: context untouched
 assert.equal(
   await handlers.context({
     messages: [{ role: "assistant", content: [{ type: "text", text: "no plan here" }] }],
   }),
   undefined,
-  "plan: absent plan leaves context alone",
+  "plan: plain transcript leaves context alone",
 );
-
-// a previous injection with no new blocks: relocated next to the latest request
-const kept = await handlers.context({
-  messages: [
-    { customType: "plan-mode-plan", content: "[CURRENT PLAN]\nold body" },
-    { role: "user" },
-  ],
-});
-assert.equal(kept.messages.length, 2, "plan: old injection replaced, not duplicated");
-assert.equal(kept.messages[0].role, "user", "plan: injection moved after the user turn");
-assert.equal(kept.messages[1].customType, "plan-mode-plan");
-assert.match(kept.messages[1].content, /old body/, "plan: body survives the relocation");
 const onPruned = await handlers.context({
   messages: [
     { customType: "plan-mode-off", content: "old off" },
